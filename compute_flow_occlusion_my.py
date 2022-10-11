@@ -31,6 +31,7 @@ if __name__ == "__main__":
     parser.add_argument('-phase',           type=str,     default="test",       choices=["train", "test"])
     parser.add_argument('-data_dir',        type=str,     default='data',       help='path to data folder')
     parser.add_argument('-list_dir',        type=str,     default='lists',      help='path to list folder')
+    parser.add_argument('-flow_dir', type=str, default='lists', help='path to save flow/occ/')
     parser.add_argument('-gpu',             type=int,     default=0,            help='gpu device id')
     parser.add_argument('-cpu',             action='store_true',                help='use cpu?')
 
@@ -83,18 +84,22 @@ if __name__ == "__main__":
         frame_dir = os.path.join(opts.list_dir, video)
 
         # 直接在同一个目录下存储生成的光流、遮挡、可视化的光流
+        # 还是存到外面去比较好,不要污染原本的输出了
         # fw_flow_dir = os.path.join(opts.data_dir, opts.phase, "fw_flow", opts.dataset, video)
-        fw_flow_dir = os.path.join(opts.list_dir, "fw_flow", video)
+        # fw_flow_dir = os.path.join(opts.list_dir, "fw_flow", video)
+        fw_flow_dir = os.path.join(opts.flow_dir, "fw_flow", video)
         if not os.path.isdir(fw_flow_dir):
             os.makedirs(fw_flow_dir)
 
         # fw_occ_dir = os.path.join(opts.data_dir, opts.phase, "fw_occlusion", opts.dataset, video)
-        fw_occ_dir = os.path.join(opts.list_dir, "fw_occlusion", video)
+        # fw_occ_dir = os.path.join(opts.list_dir, "fw_occlusion", video)
+        fw_occ_dir = os.path.join(opts.flow_dir, "fw_occlusion", video)
         if not os.path.isdir(fw_occ_dir):
             os.makedirs(fw_occ_dir)
 
         # fw_rgb_dir = os.path.join(opts.data_dir, opts.phase, "fw_flow_rgb", opts.dataset, video)
-        fw_rgb_dir = os.path.join(opts.list_dir, "fw_flow_rgb", video)
+        # fw_rgb_dir = os.path.join(opts.list_dir, "fw_flow_rgb", video)
+        fw_rgb_dir = os.path.join(opts.flow_dir, "fw_flow_rgb", video)
         if not os.path.isdir(fw_rgb_dir):
             os.makedirs(fw_rgb_dir)
 

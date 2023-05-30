@@ -1,5 +1,7 @@
 
-from torch.utils.ffi import _wrap_function
+# from torch.utils.ffi import _wrap_function
+from ..ffi_ext import _wrap_function        # from torch 0.4.1 for debug in higher torch version
+                                            # see https://codeantenna.com/a/7XO9h4MfdO
 from ._resample2d import lib as _lib, ffi as _ffi
 
 __all__ = []

@@ -55,87 +55,96 @@ if __name__ == "__main__":
     device = torch.device("cuda" if opts.cuda else "cpu")
     flow_warping = Resample2d().to(device)
 
-    ### load video list
-    # 因为是整个文件夹都要测试，所以video_list直接用文件夹的名字读取就好了
-    # list_filename = os.path.join(opts.list_dir, "%s_%s.txt" %(opts.dataset, opts.phase))
-    # with open(list_filename) as f:
-    #     video_list = [line.rstrip() for line in f.readlines()]
-    # list_dir就是根目录的路径
-    video_list = []
-    for root, dirs, files in os.walk(opts.list_dir, topdown=False):
-        # 获取文件夹名字
-        video_list = dirs
+    # ### load video list
+    # # 因为是整个文件夹都要测试，所以video_list直接用文件夹的名字读取就好了
+    # # list_filename = os.path.join(opts.list_dir, "%s_%s.txt" %(opts.dataset, opts.phase))
+    # # with open(list_filename) as f:
+    # #     video_list = [line.rstrip() for line in f.readlines()]
+    # # list_dir就是根目录的路径
+    # video_list = []
+    # for root, dirs, files in os.walk(opts.list_dir, topdown=False):
+    #     # 获取文件夹名字
+    #     video_list = dirs
 
-    ### start evaluation
-    err_all = np.zeros(len(video_list))
+    # ### start evaluation
+    # err_all = np.zeros(len(video_list))
+    #
+    # for v in range(len(video_list)):
 
-    for v in range(len(video_list)):
+    # video = video_list[v]
 
-        video = video_list[v]
+    # frame_dir直接用根目录+视频名字就可以了
+    # frame_dir = os.path.join(opts.data_dir, opts.phase, opts.method, opts.task, opts.dataset, video)
+    # frame_dir = os.path.join(opts.list_dir, video)
+    frame_dir = opts.list_dir
 
-        # frame_dir直接用根目录+视频名字就可以了
-        # frame_dir = os.path.join(opts.data_dir, opts.phase, opts.method, opts.task, opts.dataset, video)
-        frame_dir = os.path.join(opts.list_dir, video)
+    # 直接在同一个目录下读取生成的光流、遮挡、可视化的光流
+    # occ_dir = os.path.join(opts.data_dir, opts.phase, "fw_occlusion", opts.dataset, video)
+    # flow_dir = os.path.join(opts.data_dir, opts.phase, "fw_flow", opts.dataset, video)
+    # occ_dir = os.path.join(opts.flow_dir, "fw_occlusion", video)
+    # flow_dir = os.path.join(opts.flow_dir, "fw_flow", video)
+    occ_dir = os.path.join(opts.flow_dir, "fw_occlusion")
+    flow_dir = os.path.join(opts.flow_dir, "fw_flow")
 
-        # 直接在同一个目录下读取生成的光流、遮挡、可视化的光流
-        # occ_dir = os.path.join(opts.data_dir, opts.phase, "fw_occlusion", opts.dataset, video)
-        # flow_dir = os.path.join(opts.data_dir, opts.phase, "fw_flow", opts.dataset, video)
-        occ_dir = os.path.join(opts.flow_dir, "fw_occlusion", video)
-        flow_dir = os.path.join(opts.flow_dir, "fw_flow", video)
+    # 我们的图像是png格式
+    # frame_list = glob.glob(os.path.join(frame_dir, "*.jpg"))
+    frame_list = glob.glob(os.path.join(frame_dir, "*.png"))
 
-        # 我们的图像是png格式
-        # frame_list = glob.glob(os.path.join(frame_dir, "*.jpg"))
-        frame_list = glob.glob(os.path.join(frame_dir, "*.png"))
+    err = 0
+    for t in range(1, len(frame_list)):
 
-        err = 0
-        for t in range(1, len(frame_list)):
+        ### load input images
+        # 我们是png格式的哦
+        # filename = os.path.join(frame_dir, "%05d.jpg" %(t - 1))
+        # filename = os.path.join(frame_dir, "%05d.png" % (t - 1))
+        filename = os.path.join(frame_dir, "%06d.png" % (t - 1))
+        img1 = utils.read_img(filename)
+        # filename = os.path.join(frame_dir, "%05d.jpg" %(t))
+        # filename = os.path.join(frame_dir, "%05d.png" % (t))
+        filename = os.path.join(frame_dir, "%06d.png" % (t))
+        img2 = utils.read_img(filename)
 
-            ### load input images
-            # 我们是png格式的哦
-            # filename = os.path.join(frame_dir, "%05d.jpg" %(t - 1))
-            filename = os.path.join(frame_dir, "%05d.png" % (t - 1))
-            img1 = utils.read_img(filename)
-            # filename = os.path.join(frame_dir, "%05d.jpg" %(t))
-            filename = os.path.join(frame_dir, "%05d.png" % (t))
-            img2 = utils.read_img(filename)
-
-            # 更改提示语句
-            # print("Evaluate Warping Error on %s-%s: video %d / %d, %s" %(opts.dataset, opts.phase, v + 1, len(video_list), filename))
-            print("Evaluate Warping Error on: video %d / %d, %s" % (v + 1, len(video_list), filename))
-
-
-            ### load flow
-            filename = os.path.join(flow_dir, "%05d.flo" %(t-1))
-            flow = utils.read_flo(filename)
-
-            ### load occlusion mask
-            filename = os.path.join(occ_dir, "%05d.png" %(t-1))
-            occ_mask = utils.read_img(filename)
-            noc_mask = 1 - occ_mask
-
-            with torch.no_grad():
-
-                ## convert to tensor
-                img2 = utils.img2tensor(img2).to(device)
-                flow = utils.img2tensor(flow).to(device)
-
-                ## warp img2
-                warp_img2 = flow_warping(img2, flow)
-
-                ## convert to numpy array
-                warp_img2 = utils.tensor2img(warp_img2)
+        # 更改提示语句
+        # print("Evaluate Warping Error on %s-%s: video %d / %d, %s" %(opts.dataset, opts.phase, v + 1, len(video_list), filename))
+        # print("Evaluate Warping Error on: video %d / %d, %s" % (v + 1, len(video_list), filename))
+        print("Evaluate Warping Error on: video %s, %s" % (opts.list_dir, filename))
 
 
-            ## compute warping error
-            diff = np.multiply(warp_img2 - img1, noc_mask)
-            
-            N = np.sum(noc_mask)
-            if N == 0:
-                N = diff.shape[0] * diff.shape[1] * diff.shape[2]
+        ### load flow
+        # filename = os.path.join(flow_dir, "%05d.flo" %(t-1))
+        filename = os.path.join(flow_dir, "%06d.flo" % (t - 1))
+        flow = utils.read_flo(filename)
 
-            err += np.sum(np.square(diff)) / N
-            
-        err_all[v] = err / (len(frame_list) - 1)
+        ### load occlusion mask
+        # filename = os.path.join(occ_dir, "%05d.png" %(t-1))
+        filename = os.path.join(occ_dir, "%06d.png" % (t - 1))
+        occ_mask = utils.read_img(filename)
+        noc_mask = 1 - occ_mask
+
+        with torch.no_grad():
+
+            ## convert to tensor
+            img2 = utils.img2tensor(img2).to(device)
+            flow = utils.img2tensor(flow).to(device)
+
+            ## warp img2
+            warp_img2 = flow_warping(img2, flow)
+
+            ## convert to numpy array
+            warp_img2 = utils.tensor2img(warp_img2)
+
+
+        ## compute warping error
+        diff = np.multiply(warp_img2 - img1, noc_mask)
+
+        N = np.sum(noc_mask)
+        if N == 0:
+            N = diff.shape[0] * diff.shape[1] * diff.shape[2]
+
+        err += np.sum(np.square(diff)) / N
+
+    # err_all[v] = err / (len(frame_list) - 1)
+    err_all = err / (len(frame_list) - 1)
 
 
     print("\nAverage Warping Error = %f\n" %(err_all.mean()))

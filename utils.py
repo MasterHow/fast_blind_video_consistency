@@ -9,7 +9,8 @@ from torch.utils.data.sampler import Sampler
 from torch.utils.data import DataLoader
 
 ### custom lib
-from networks.resample2d_package.modules.resample2d import Resample2d
+# from networks.resample2d_package.modules.resample2d import Resample2d
+from mmflow.ops.warp import Warp
 
 FLO_TAG = 202021.25
 EPS = 1e-12
@@ -514,7 +515,10 @@ def detect_occlusion(fw_flow, bw_flow):
         bw_flow_t = img2tensor(bw_flow).cuda()
 
         ## warp fw-flow to img2
-        flow_warping = Resample2d().cuda()
+        # flow_warping = Resample2d().cuda()
+        # fw_flow_w = flow_warping(fw_flow_t, bw_flow_t)
+        # use mmflow implementation
+        flow_warping = Warp().cuda()
         fw_flow_w = flow_warping(fw_flow_t, bw_flow_t)
     
         ## convert to numpy array
